@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="SUKIMA PLAN">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="color-scheme" content="dark">
 <title>SUKIMA PLAN</title>
@@ -258,6 +263,12 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .ghost::after{border-color:var(--bw)}
 .ttc.cur{outline-color:var(--bw)}
 .now{background:var(--gold);box-shadow:0 0 5px var(--gold)}
+/* ===== v6: 天気（控えめ） ===== */
+.cell{position:relative}
+.wx{font-size:10px;opacity:.6;font-weight:400}
+.wh .wx{display:block;line-height:1.1;margin-top:1px}
+.wxi{position:absolute;top:1px;right:2px;font-size:9px;font-style:normal;opacity:.4;filter:saturate(.5)}
+#dayWx{font-size:11px;opacity:.65;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -303,7 +314,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   <section class="sec" id="s2">
     <div class="sh">
       <button class="btn sm" id="dPrev" aria-label="前の日">◀</button>
-      <b id="dayLabel"></b>
+      <b id="dayLabel"></b><span id="dayWx" class="wx"></span>
       <button class="btn sm" id="dNext" aria-label="次の日">▶</button>
       <span class="sp"></span>
       <button class="btn sm pri" id="dAdd" title="予定を追加">＋</button>
@@ -367,6 +378,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   <div class="ph"><button class="btn sm" id="rvPrev">◀</button><b id="rvLabel" style="flex:1;text-align:center;color:var(--bw)"></b><button class="btn sm" id="rvNext">▶</button><button class="ib" id="rvClose" aria-label="閉じる">✕</button></div>
   <div class="pbody" id="rvBody"></div>
 </div></div>
+<!-- 地域（天気） -->
+<div class="ov hide" id="wxp"><div class="panel">
+  <div class="ph"><b style="flex:1;color:var(--bw);font-size:16px">☁</b><button class="ib" id="wxClose" aria-label="閉じる">✕</button></div>
+  <input class="in" id="wxQ" type="text" placeholder="🔍" autocomplete="off">
+  <div class="pbody" id="wxList" style="margin-top:10px"></div>
+  <div class="hint" id="wxNote" style="padding:6px 0 max(10px,env(safe-area-inset-bottom))"></div>
+</div></div>
 <div id="toast"></div>
 <input type="file" id="imp" accept=".json,application/json" hidden>
 
@@ -398,8 +416,8 @@ const md=k=>{const d=parseISO(k);return `${d.getMonth()+1}/${d.getDate()}(${WD[d
 
 /* ================= データ ================= */
 const DEFP=[[540,630],[640,730],[780,870],[880,970],[980,1070],[1080,1170],[1180,1270],[1280,1370],[1380,1439],[420,510]]; // 7〜10限は仮の時間（メニューで変更可）
-function defaults(){return{events:[],templates:[],todos:[],recent:[],skips:[],autoWeeks:[],autoApply:false,periods:DEFP.map(p=>[...p]),timetable:{cells:{},rows:6,from:'',to:''}}}
-function fixS(o){if(!Array.isArray(o.periods))o.periods=DEFP.map(p=>[...p]);while(o.periods.length<10)o.periods.push([...DEFP[o.periods.length]]);return o}
+function defaults(){return{events:[],templates:[],todos:[],recent:[],skips:[],autoWeeks:[],autoApply:false,periods:DEFP.map(p=>[...p]),timetable:{cells:{},rows:6,from:'',to:''},wx:{loc:'',at:0,days:{}}}}
+function fixS(o){if(!o.wx)o.wx={loc:'',at:0,days:{}};if(!Array.isArray(o.periods))o.periods=DEFP.map(p=>[...p]);while(o.periods.length<10)o.periods.push([...DEFP[o.periods.length]]);return o}
 function load(){try{const j=localStorage.getItem(KEY);if(j)return fixS(Object.assign(defaults(),JSON.parse(j)))}catch(e){}return defaults()}
 let S=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -438,7 +456,7 @@ function renderMonth(){
       const d=addDays(st,c),k=iso(d);
       const ev=(map[k]||[]).sort((a,b)=>a.start-b.start);
       const cls=['cell',d.getMonth()!==m1.getMonth()?'oth':'',c%7===0?'sun':c%7===6?'sat':'',k===tk?'tdy':'',k===sel?'sel':''].join(' ');
-      h+=`<div class="${cls}" data-d="${k}"><span class="dn">${d.getDate()}</span>`+
+      h+=`<div class="${cls}" data-d="${k}"><span class="dn">${d.getDate()}</span>${d.getMonth()===m1.getMonth()?wxMini(k):''}`+
         ev.slice(0,4).map(e=>`<div class="mb c-${e.cat}">${esc(e.title)}</div>`).join('')+`</div>`;
     }
     h+=`</div>`;
@@ -470,7 +488,7 @@ function renderWeek(){
     const d=addDays(ws,i),k=iso(d);
     const ev=S.events.filter(e=>e.date===k).sort((a,b)=>a.start-b.start||a.end-b.end);
     h+=`<div class="wcol ${i===0?'sun':i===6?'sat':''} ${k===tk?'tdy':''} ${k===sel?'sel':''}" data-d="${k}">`+
-      `<div class="wh" data-d="${k}">${WD[i]}<span class="n">${d.getDate()}</span></div>`+
+      `<div class="wh" data-d="${k}">${WD[i]}<span class="n">${d.getDate()}</span>${wxLine(k)}</div>`+
       (ev.length?ev.map(e=>`<div class="ev c-${e.cat}" data-id="${e.id}"><i>${fmtT(e.start)}–${fmtT(e.end)}</i><b>${esc(e.title)}</b></div>`).join(''):'')+
       `</div>`;
   }
@@ -489,6 +507,7 @@ $('#wNext').onclick=()=>setSel(iso(addDays(parseISO(sel),7)),{scroll:false});
 function renderDay(){
   const k=sel,d=parseISO(k);
   $('#dayLabel').textContent=md(k)+(k===todayK()?' 今日':'');
+  $('#dayWx').textContent=wxDay(k);
   const evs=S.events.filter(e=>e.date===k).sort((a,b)=>a.start-b.start||a.end-b.end);
   const laneEnd=[],lane={};
   evs.forEach(e=>{let i=laneEnd.findIndex(x=>x<=e.start);if(i<0){i=laneEnd.length;laneEnd.push(0)}laneEnd[i]=e.end;lane[e.id]=i});
@@ -999,7 +1018,7 @@ function deleteTemplate(id){
 
 /* ================= 定型・設定 ================= */
 function renderMgr(){
-  let h=`<div class="chips"><button class="btn pri" id="mgrTT">🗓 時間割</button><button class="btn" id="mgrRV">📊</button></div><div class="sech">定型</div>`;
+  let h=`<div class="chips"><button class="btn pri" id="mgrTT">🗓 時間割</button><button class="btn" id="mgrRV">📊</button><button class="btn" id="mgrWx">☁ ${esc((S.wx&&S.wx.loc)||'—')}</button>${installEv?'<button class="btn" id="mgrInst">📲</button>':''}</div><div class="sech">定型</div>`;
   for(const t of S.templates){
     const per=(t.from||t.to)?` ・ ${t.from?md(t.from):'…'}〜${t.to?md(t.to):'…'}`:'';
     h+=`<div class="trow" data-id="${t.id}"><div class="ti"><b>${esc(t.title)}</b><span>${t.days.map(d=>WD[d]).join('')} ${fmtT(t.start)}–${fmtT(t.end)} ・ ${(CATS[t.cat]||CATS.other).n}${per}</span></div>`+
@@ -1024,6 +1043,8 @@ $('#mgr').addEventListener('click',e=>{
   const row=b.closest('.trow'),id=row&&row.dataset.id,a=b.dataset.a;
   const ws=weekStart(parseISO(sel));
   if(b.id==='mgrTT'){$('#mgr').classList.add('hide');openTT()}
+  else if(b.id==='mgrWx'){$('#mgr').classList.add('hide');openWx()}
+  else if(b.id==='mgrInst'&&installEv){installEv.prompt()}
   else if(b.id==='mgrRV'){$('#mgr').classList.add('hide');openRV()}
   else if(b.id==='mgrAdd'){$('#mgr').classList.add('hide');openSheet({mode:'tpl'})}
   else if(a==='wk')doApply(ws,addDays(ws,6),id,'今週');
@@ -1082,7 +1103,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#sheet').cla
 function renderAll(){renderMonth();renderWeek();renderDay();renderTodo()}
 function tick(){updateNow();renderTodo()}
 setInterval(tick,30000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderAll()}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderAll();fetchWx()}});
 
 /* ================= 長押しドラッグ（予定の移動） ================= */
 let LP=null,DR=null,dragEnd=0;
@@ -1303,6 +1324,65 @@ $('#rvNext').onclick=()=>{rvWeek=addDays(rvWeek,7);renderRV()};
 $('#rvClose').onclick=()=>$('#rv').classList.add('hide');
 $('#rv').addEventListener('click',e=>{if(e.target.id==='rv')$('#rv').classList.add('hide')});
 
+/* ================= 天気（オンライン時のみ・地域は手動・控えめ表示） ================= */
+const WX_CITIES=[['札幌',43.06,141.35],['青森',40.82,140.74],['盛岡',39.70,141.15],['仙台',38.27,140.87],['秋田',39.72,140.10],['山形',38.24,140.36],['福島',37.75,140.47],
+['水戸',36.34,140.45],['宇都宮',36.57,139.88],['前橋',36.39,139.06],['さいたま',35.86,139.65],['千葉',35.61,140.12],['東京',35.69,139.69],['横浜',35.45,139.64],
+['新潟',37.90,139.02],['富山',36.70,137.21],['金沢',36.59,136.63],['福井',36.07,136.22],['甲府',35.66,138.57],['長野',36.65,138.18],['岐阜',35.39,136.72],['静岡',34.98,138.38],
+['名古屋',35.18,136.91],['津',34.73,136.51],['大津',35.00,135.87],['京都',35.02,135.76],['大阪',34.69,135.50],['神戸',34.69,135.18],['奈良',34.69,135.83],['和歌山',34.23,135.17],
+['鳥取',35.50,134.24],['松江',35.47,133.05],['岡山',34.66,133.93],['広島',34.40,132.46],['山口',34.19,131.47],['徳島',34.07,134.56],['高松',34.34,134.05],['松山',33.84,132.77],
+['高知',33.56,133.53],['福岡',33.61,130.42],['佐賀',33.25,130.30],['長崎',32.74,129.87],['熊本',32.79,130.74],['大分',33.24,131.61],['宮崎',31.91,131.42],['鹿児島',31.56,130.56],['那覇',26.21,127.68]];
+function wxIcon(c){if(c===0)return'☀';if(c<=2)return'🌤';if(c===3)return'☁';if(c<=48)return'🌫';if(c<=57)return'🌦';if(c<=67)return'🌧';if(c<=77)return'❄';if(c<=82)return'🌧';if(c<=86)return'❄';return'⛈'}
+const wxOf=k=>S.wx&&S.wx.loc&&S.wx.days&&S.wx.days[k]||null;
+function wxLine(k){const w=wxOf(k);return w?`<small class="wx">${wxIcon(w.c)}${w.hi}°${w.p>=50?' ☂'+w.p:''}</small>`:''}
+function wxMini(k){const w=wxOf(k);return w?`<i class="wxi">${wxIcon(w.c)}</i>`:''}
+function wxDay(k){const w=wxOf(k);return w?`${wxIcon(w.c)} ${w.hi}°/${w.lo}°`+(w.p!=null&&w.p>=30?` ☂${w.p}%`:''):''}
+function renderWxViews(){renderMonth();renderWeek();renderDay()}
+async function fetchWx(force){
+  const W=S.wx;if(!W||!W.loc||!navigator.onLine)return;
+  const c=WX_CITIES.find(x=>x[0]===W.loc);if(!c)return;
+  if(!force&&Date.now()-W.at<3*3600e3)return;
+  try{
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${c[1]}&longitude=${c[2]}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&past_days=2&forecast_days=16`;
+    const r=await fetch(u,{signal:ctl.signal});clearTimeout(to);
+    if(!r.ok)return;
+    const j=await r.json(),d=j.daily;if(!d||!d.time)return;
+    if(S.wx.loc!==c[0])return;                       // 取得中に地域が変わった
+    const cut=iso(addDays(new Date(),-30));
+    d.time.forEach((t,i)=>{S.wx.days[t]={c:d.weather_code[i],hi:Math.round(d.temperature_2m_max[i]),lo:Math.round(d.temperature_2m_min[i]),p:d.precipitation_probability_max?d.precipitation_probability_max[i]:null}});
+    Object.keys(S.wx.days).forEach(k=>{if(k<cut)delete S.wx.days[k]});
+    S.wx.at=Date.now();save();renderWxViews();
+  }catch(_){/* オフライン・失敗時は保存済みの天気をそのまま表示 */}
+}
+function renderWxList(){
+  const q=$('#wxQ').value.trim(),cur=S.wx.loc;
+  $('#wxList').innerHTML=`<div class="chips"><button type="button" class="chip${cur?'':' on'}" data-c="">✕</button>`+
+    WX_CITIES.filter(c=>!q||c[0].includes(q)).map(c=>`<button type="button" class="chip${cur===c[0]?' on':''}" data-c="${c[0]}">${c[0]}</button>`).join('')+'</div>';
+}
+function openWx(){
+  $('#wxQ').value='';renderWxList();
+  $('#wxNote').textContent=S.wx.at?'⟳ '+new Date(S.wx.at).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  $('#wxp').classList.remove('hide');
+}
+$('#wxQ').addEventListener('input',renderWxList);
+$('#wxList').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const n=b.dataset.c;
+  if(n!==S.wx.loc){S.wx.loc=n;S.wx.days={};S.wx.at=0;save()}
+  $('#wxp').classList.add('hide');renderWxViews();
+  if(n){if(navigator.onLine)fetchWx(true);else toast('接続後に反映',false)}
+});
+$('#wxClose').onclick=()=>$('#wxp').classList.add('hide');
+$('#wxp').addEventListener('click',e=>{if(e.target.id==='wxp')$('#wxp').classList.add('hide')});
+window.addEventListener('online',()=>fetchWx(true));
+
+/* ================= アプリ化（PWA） ================= */
+let installEv=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEv=e;if(!$('#mgr').classList.contains('hide'))renderMgr()});
+window.addEventListener('appinstalled',()=>{installEv=null});
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+}
+
 /* ================= 起動 ================= */
 visIdx=idxOfDate(new Date());
 renderTdChips();
@@ -1311,6 +1391,7 @@ renderAll();
 layout();
 goMonth(visIdx,false);
 scrollDayDefault();
+fetchWx();
 })();
 </script>
 </body>
