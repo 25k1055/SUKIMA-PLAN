@@ -1,5 +1,5 @@
 /* SUKIMA PLAN service worker — アプリ本体をキャッシュしてオフラインでも起動 */
-const V='sukima-plan-v1';   // アプリを更新したら v2, v3… に変える
+const V='sukima-plan-v3';   // アプリを更新したら v2, v3… に変える
 const ASSETS=['./','./ai_project.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(V).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));

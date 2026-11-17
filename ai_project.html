@@ -269,6 +269,35 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .wh .wx{display:block;line-height:1.1;margin-top:1px}
 .wxi{position:absolute;top:1px;right:2px;font-size:9px;font-style:normal;opacity:.4;filter:saturate(.5)}
 #dayWx{font-size:11px;opacity:.65;white-space:nowrap}
+/* ===== v7: 実施の記録（✓ / △ / ✕） ===== */
+.ev{position:relative;padding-right:26px}
+.stb{position:absolute;top:2px;right:3px;min-width:20px;height:20px;border-radius:10px;border:none;background:rgba(0,0,0,.3);color:inherit;font-size:12px;line-height:20px;padding:0;opacity:.55}
+.st-part .stb,.st-skip .stb{opacity:1;background:rgba(0,0,0,.6);color:#fff}
+.st-part{background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.28) 0 6px,transparent 6px 12px)}
+.st-skip{opacity:.5}
+.st-skip b,.st-skip.mb{text-decoration:line-through}
+.rvr .bar{position:relative}
+.rvr .bar i,.rvr .bar u{position:absolute;left:0;top:0;bottom:0;display:block}
+.rvr .bar u{background:var(--c);opacity:.3;border-radius:8px}
+.rvr .hv{width:92px;font-size:13px}
+.rvs{text-align:center;color:var(--mut);font-size:13px;margin-top:2px}
+/* ===== v8: 招待・共通の空き・閲覧モード ===== */
+.top .btn{padding:6px 8px}
+.vbar{flex:none;display:flex;gap:6px;align-items:center;padding:4px 8px;overflow-x:auto;scrollbar-width:none;background:#000;border-bottom:1px solid var(--line)}
+.vbar::-webkit-scrollbar{display:none}
+.vbar.hide{display:none}
+.vc{flex:none;padding:5px 13px;border-radius:999px;border:1px solid rgba(222,184,135,.45);background:none;font-size:13px}
+.vc.on{background:var(--bw);color:#000;font-weight:700}
+.vro{flex:none;font-size:14px;opacity:.75}
+body.vm .vc.on{background:var(--sea);color:var(--tx);border-color:var(--sea)}
+body.vm .top{border-bottom-color:var(--sea)}
+body.vm #mApply,body.vm #wApply,body.vm #wRv,body.vm #dAdd{display:none}
+#freeBox{display:none;flex:1;min-height:0;overflow:auto;padding:8px;flex-direction:column;gap:8px}
+.sec.viewing #freeBox{display:flex}
+.sec.viewing #todoList,.sec.viewing .tfrow,.sec.viewing #tdChips,.sec.viewing #tClear,.sec.viewing #tAdd{display:none}
+.fres{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,250,250,.06);font-size:15px;text-align:left}
+.fres small{color:var(--mut)}
+.panel textarea.pcode{min-height:96px;resize:vertical;font-size:12px;padding:10px;word-break:break-all}
 </style>
 </head>
 <body>
@@ -280,8 +309,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   </nav>
   <button class="btn" id="btnToday">今日</button>
   <button class="btn pri" id="btnAdd" aria-label="予定を追加">＋</button>
+  <button class="btn" id="btnPpl" aria-label="招待" title="招待">👥</button>
   <button class="btn" id="btnMenu" aria-label="メニュー">☰</button>
 </header>
+<div id="vbar" class="vbar hide"></div>
 
 <main id="main">
   <!-- ① 月 -->
@@ -325,7 +356,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   <!-- ④ ToDo -->
   <section class="sec" id="s3">
     <div class="sh">
-      <b>ToDo</b>
+      <b id="s3t">ToDo</b>
       <span class="sp"></span>
       <button class="btn sm warn" id="tClear" title="完了を消去">🧹</button>
       <button class="btn sm pri" id="tAdd" title="詳細を入力">＋</button>
@@ -336,6 +367,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     </div>
     <div id="tdChips"></div>
     <div id="todoList"></div>
+    <div id="freeBox"></div>
   </section>
 </main>
 
@@ -378,6 +410,17 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   <div class="ph"><button class="btn sm" id="rvPrev">◀</button><b id="rvLabel" style="flex:1;text-align:center;color:var(--bw)"></b><button class="btn sm" id="rvNext">▶</button><button class="ib" id="rvClose" aria-label="閉じる">✕</button></div>
   <div class="pbody" id="rvBody"></div>
 </div></div>
+<!-- 招待 -->
+<div class="ov hide" id="pp"><div class="panel">
+  <div class="ph"><b style="flex:1;color:var(--bw);font-size:16px">👥 スケジュール表に招待</b><button class="ib" id="ppClose" aria-label="閉じる">✕</button></div>
+  <div class="pbody" id="ppBody"></div>
+</div></div>
+<!-- 共通の空き -->
+<div class="ov hide" id="fr"><div class="panel">
+  <div class="ph"><b style="flex:1;color:var(--bw);font-size:16px">🔍 共通の空き</b><button class="ib" id="frClose" aria-label="閉じる">✕</button></div>
+  <div class="pbody" id="frBody"></div>
+</div></div>
+<input type="file" id="ppFile" accept=".txt,.json,.sukima,text/plain,application/json" hidden>
 <!-- 地域（天気） -->
 <div class="ov hide" id="wxp"><div class="panel">
   <div class="ph"><b style="flex:1;color:var(--bw);font-size:16px">☁</b><button class="ib" id="wxClose" aria-label="閉じる">✕</button></div>
@@ -416,8 +459,8 @@ const md=k=>{const d=parseISO(k);return `${d.getMonth()+1}/${d.getDate()}(${WD[d
 
 /* ================= データ ================= */
 const DEFP=[[540,630],[640,730],[780,870],[880,970],[980,1070],[1080,1170],[1180,1270],[1280,1370],[1380,1439],[420,510]]; // 7〜10限は仮の時間（メニューで変更可）
-function defaults(){return{events:[],templates:[],todos:[],recent:[],skips:[],autoWeeks:[],autoApply:false,periods:DEFP.map(p=>[...p]),timetable:{cells:{},rows:6,from:'',to:''},wx:{loc:'',at:0,days:{}}}}
-function fixS(o){if(!o.wx)o.wx={loc:'',at:0,days:{}};if(!Array.isArray(o.periods))o.periods=DEFP.map(p=>[...p]);while(o.periods.length<10)o.periods.push([...DEFP[o.periods.length]]);return o}
+function defaults(){return{events:[],templates:[],todos:[],recent:[],skips:[],autoWeeks:[],autoApply:false,periods:DEFP.map(p=>[...p]),timetable:{cells:{},rows:6,from:'',to:''},wx:{loc:'',at:0,days:{}},members:[],me:{id:'',name:'',mode:'busy',weeks:4},fr:{days:[0,1,2,3,4,5,6],from:540,to:1260,len:60,weeks:2,ids:null},lastBackup:0,remind:''}}
+function fixS(o){if(!Array.isArray(o.members))o.members=[];if(!o.me)o.me={id:'',name:'',mode:'busy',weeks:4};if(!o.fr)o.fr={days:[0,1,2,3,4,5,6],from:540,to:1260,len:60,weeks:2,ids:null};if(!o.wx)o.wx={loc:'',at:0,days:{}};if(!Array.isArray(o.periods))o.periods=DEFP.map(p=>[...p]);while(o.periods.length<10)o.periods.push([...DEFP[o.periods.length]]);return o}
 function load(){try{const j=localStorage.getItem(KEY);if(j)return fixS(Object.assign(defaults(),JSON.parse(j)))}catch(e){}return defaults()}
 let S=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -447,7 +490,7 @@ const idxOfDate=d=>(d.getFullYear()-baseM.getFullYear())*12+d.getMonth()-baseM.g
 const monEl=$('#mon');
 
 function renderMonth(){
-  const map={};S.events.forEach(e=>(map[e.date]||(map[e.date]=[])).push(e));
+  const map={};curEvents().forEach(e=>(map[e.date]||(map[e.date]=[])).push(e));
   const tk=todayK(),sl=monEl.scrollLeft;let h='';
   for(let i=0;i<MN;i++){
     const m1=monthOfIdx(i),st=addDays(m1,-m1.getDay());
@@ -457,7 +500,7 @@ function renderMonth(){
       const ev=(map[k]||[]).sort((a,b)=>a.start-b.start);
       const cls=['cell',d.getMonth()!==m1.getMonth()?'oth':'',c%7===0?'sun':c%7===6?'sat':'',k===tk?'tdy':'',k===sel?'sel':''].join(' ');
       h+=`<div class="${cls}" data-d="${k}"><span class="dn">${d.getDate()}</span>${d.getMonth()===m1.getMonth()?wxMini(k):''}`+
-        ev.slice(0,4).map(e=>`<div class="mb c-${e.cat}">${esc(e.title)}</div>`).join('')+`</div>`;
+        ev.slice(0,4).map(e=>`<div class="mb c-${e.cat}${e.st?' st-'+e.st:''}">${esc(e.title)}</div>`).join('')+`</div>`;
     }
     h+=`</div>`;
   }
@@ -486,16 +529,18 @@ function renderWeek(){
   let h='';
   for(let i=0;i<7;i++){
     const d=addDays(ws,i),k=iso(d);
-    const ev=S.events.filter(e=>e.date===k).sort((a,b)=>a.start-b.start||a.end-b.end);
+    const ev=curEvents().filter(e=>e.date===k).sort((a,b)=>a.start-b.start||a.end-b.end);
     h+=`<div class="wcol ${i===0?'sun':i===6?'sat':''} ${k===tk?'tdy':''} ${k===sel?'sel':''}" data-d="${k}">`+
       `<div class="wh" data-d="${k}">${WD[i]}<span class="n">${d.getDate()}</span>${wxLine(k)}</div>`+
-      (ev.length?ev.map(e=>`<div class="ev c-${e.cat}" data-id="${e.id}"><i>${fmtT(e.start)}–${fmtT(e.end)}</i><b>${esc(e.title)}</b></div>`).join(''):'')+
+      (ev.length?ev.map(e=>`<div class="ev c-${e.cat}${e.st?' st-'+e.st:''}" data-id="${e.id}"><i>${fmtT(e.start)}–${fmtT(e.end)}</i><b>${esc(e.title)}</b>${stBadge(e)}</div>`).join(''):'')+
       `</div>`;
   }
   $('#week').innerHTML=h;
 }
 $('#week').addEventListener('click',e=>{
-  if(recentDrag())return;const col=e.target.closest('.wcol');if(!col)return;
+  if(recentDrag())return;
+  const sb=e.target.closest('.stb');if(sb){cycleSt(sb.dataset.id);return}
+  const col=e.target.closest('.wcol');if(!col)return;
   const k=col.dataset.d,ev=e.target.closest('.ev');
   if(ev&&k===sel){openEdit('event',ev.dataset.id);return}   // 選択済みの日の予定をタップで編集
   setSel(k);                                                 // 列のどこをタップしても日を選択
@@ -508,7 +553,7 @@ function renderDay(){
   const k=sel,d=parseISO(k);
   $('#dayLabel').textContent=md(k)+(k===todayK()?' 今日':'');
   $('#dayWx').textContent=wxDay(k);
-  const evs=S.events.filter(e=>e.date===k).sort((a,b)=>a.start-b.start||a.end-b.end);
+  const evs=curEvents().filter(e=>e.date===k).sort((a,b)=>a.start-b.start||a.end-b.end);
   const laneEnd=[],lane={};
   evs.forEach(e=>{let i=laneEnd.findIndex(x=>x<=e.start);if(i<0){i=laneEnd.length;laneEnd.push(0)}laneEnd[i]=e.end;lane[e.id]=i});
   const nl=Math.max(3,laneEnd.length);
@@ -516,8 +561,8 @@ function renderDay(){
   for(let x=0;x<24;x++)h+=`<div class="hh" style="left:${x*HW}px;width:${HW}px">${x}:00</div>`;
   h+=`</div><div class="track" style="height:${nl*LH+12}px">`;
   evs.forEach(e=>{
-    h+=`<div class="db c-${e.cat}" data-id="${e.id}" style="left:${e.start/60*HW}px;width:${Math.max((e.end-e.start)/60*HW-2,26)}px;top:${lane[e.id]*LH+4}px;height:${LH-6}px">`+
-       `<b>${esc(e.title)}</b><small>${fmtT(e.start)}-${fmtT(e.end)}</small></div>`;
+    h+=`<div class="db c-${e.cat}${e.st?' st-'+e.st:''}" data-id="${e.id}" style="left:${e.start/60*HW}px;width:${Math.max((e.end-e.start)/60*HW-2,26)}px;top:${lane[e.id]*LH+4}px;height:${LH-6}px">`+
+       `<b>${esc(e.title)}</b><small>${fmtT(e.start)}-${fmtT(e.end)}</small>${(e.end-e.start)/60*HW>=56?stBadge(e):''}</div>`;
   });
   h+=`<div class="now" id="nowLine"></div></div>`;
   const inner=$('#dayInner');
@@ -531,12 +576,14 @@ function updateNow(){
 function scrollDayDefault(){
   const sc=$('#dayScroll');let m;
   if(sel===todayK())m=nowMin()-90;
-  else{const ev=S.events.filter(e=>e.date===sel);m=ev.length?Math.min(...ev.map(e=>e.start))-60:420}
+  else{const ev=curEvents().filter(e=>e.date===sel);m=ev.length?Math.min(...ev.map(e=>e.start))-60:420}
   sc.scrollLeft=Math.max(0,m/60*HW);
 }
 $('#dayInner').addEventListener('click',e=>{
-  if(recentDrag())return;const b=e.target.closest('.db');if(b){openEdit('event',b.dataset.id);return}
-  const tr=e.target.closest('.track');if(!tr)return;
+  if(recentDrag())return;
+  const sb=e.target.closest('.stb');if(sb){cycleSt(sb.dataset.id);return}
+  const b=e.target.closest('.db');if(b){openEdit('event',b.dataset.id);return}
+  if(viewAs!=='me')return;const tr=e.target.closest('.track');if(!tr)return;
   const x=e.clientX-tr.getBoundingClientRect().left;
   const m=Math.min(1380,Math.max(0,Math.floor(x/HW*2)*30));
   openSheet({mode:'event',date:sel,start:m,end:Math.min(m+60,1440)});
@@ -765,12 +812,13 @@ const HINTS={event:'',tpl:'',todo:''};
 function mkV(mode,o={}){
   if(mode==='event'){
     const date=o.date||sel,s=o.start??autoSlot(60,date,false).start;
-    return{title:o.title||'',date,start:s,end:o.end??Math.min(s+60,1440),cat:o.cat||'other'};
+    return{title:o.title||'',date,start:s,end:o.end??Math.min(s+60,1440),cat:o.cat||'other',pv:!!o.pv};
   }
   if(mode==='tpl')return{title:o.title||'',days:o.days||[],start:o.start??540,end:o.end??630,cat:o.cat||'study',from:o.from||'',to:o.to||''};
   return{title:o.title||'',due:o.due||'',dueT:o.dueT||'',dur:o.dur||60};
 }
 function openSheet(o={}){
+  if(viewAs!=='me')setView('me');
   const mode=o.mode||'event';
   SH={mode,edit:o.edit||null,locked:!!o.edit,catManual:!!o.edit,v:o.v||mkV(mode,o),calY:null,calM:null,lastCal:null,calT:'from'};
   $('#smart').value='';
@@ -783,7 +831,7 @@ function openSheet(o={}){
 function openEdit(type,id){
   if(type==='event'){
     const e=S.events.find(x=>x.id===id);if(!e)return;
-    openSheet({mode:'event',edit:{type,id},v:{title:e.title,date:e.date,start:e.start,end:e.end,cat:e.cat}});
+    openSheet({mode:'event',edit:{type,id},v:{title:e.title,date:e.date,start:e.start,end:e.end,cat:e.cat,st:e.st||'',pv:!!e.pv}});
   }else if(type==='tpl'){
     const t=S.templates.find(x=>x.id===id);if(!t)return;
     openSheet({mode:'tpl',edit:{type,id},v:{title:t.title,days:[...t.days],start:t.start,end:t.end,cat:t.cat,from:t.from||'',to:t.to||''}});
@@ -827,7 +875,7 @@ function buildFields(){
   const title=`<label class="fl">タイトル<input class="in" id="f-title" type="text" autocomplete="off"></label>`;
   const times=`<div class="row3"><label class="fl">開始<input class="in" id="f-start" type="time"></label><label class="fl">終了<input class="in" id="f-end" type="time"></label></div>`;
   if(m==='event'){
-    h=title+`<div id="cal"></div>`+times+perChips()+durChips()+catChips();
+    h=title+(SH.edit?`<div class="lbl">実施</div><div class="chips"><button type="button" class="chip" data-st="">✓</button><button type="button" class="chip" data-st="part">△</button><button type="button" class="chip" data-st="skip">✕</button></div>`:'')+`<div id="cal"></div>`+times+perChips()+durChips()+catChips()+`<div class="chips" style="margin-top:10px"><button type="button" class="chip" data-pv="1" title="共有時に予定名を隠す">🔒</button></div>`;
   }else if(m==='tpl'){
     h=title+`<div class="chips">${WD.map((w,i)=>`<button type="button" class="chip" data-dow="${i}">${w}</button>`).join('')}</div>`+
       times+perChips()+catChips()+
@@ -870,6 +918,8 @@ function syncFields(){
   $$('#fields [data-cat]').forEach(b=>b.classList.toggle('on',b.dataset.cat===v.cat));
   $$('#fields [data-dow]').forEach(b=>b.classList.toggle('on',(v.days||[]).includes(+b.dataset.dow)));
   $$('#fields [data-per]').forEach(b=>{const p=S.periods[+b.dataset.per];b.classList.toggle('on',v.start===p[0]&&v.end===p[1])});
+  $$('#fields [data-pv]').forEach(b=>b.classList.toggle('on',!!v.pv));
+  $$('#fields [data-st]').forEach(b=>b.classList.toggle('on',(v.st||'')===b.dataset.st));
   $$('#fields [data-dur]').forEach(b=>b.classList.toggle('on',SH.mode==='todo'?v.dur===+b.dataset.dur:(v.end-v.start)===+b.dataset.dur));
   $$('#fields [data-calt]').forEach(b=>b.classList.toggle('on',b.dataset.calt===(SH.calT||'from')));
   const ci=document.getElementById('calInfo');
@@ -906,6 +956,8 @@ $('#fields').addEventListener('click',e=>{
   }
   else if(d.cn){SH.calM+=+d.cn;if(SH.calM<0){SH.calM=11;SH.calY--}if(SH.calM>11){SH.calM=0;SH.calY++}}
   else if(d.calt){SH.calT=d.calt}
+  else if(d.st!==undefined){v.st=d.st}
+  else if(d.pv!==undefined){v.pv=!v.pv}
   else if(d.cat){v.cat=d.cat;SH.catManual=true}
   else if(d.dow!=null){const n=+d.dow,i=v.days.indexOf(n);i>=0?v.days.splice(i,1):v.days.push(n);v.days.sort((a,b)=>a-b)}
   else if(d.per!=null){const p=S.periods[+d.per];v.start=p[0];v.end=p[1]}
@@ -971,8 +1023,8 @@ function saveSheet(applyTpl){
     if(!v.date)v.date=sel;
     if(v.end<=v.start)v.end=Math.min(v.start+60,1440);
     snap();
-    if(SH.edit){const e=S.events.find(x=>x.id===SH.edit.id);if(e)Object.assign(e,{title,cat:v.cat,date:v.date,start:v.start,end:v.end})}
-    else{S.events.push({id:uid(),title,cat:v.cat,date:v.date,start:v.start,end:v.end});remember({title,cat:v.cat,start:v.start,end:v.end})}
+    if(SH.edit){const e=S.events.find(x=>x.id===SH.edit.id);if(e){Object.assign(e,{title,cat:v.cat,date:v.date,start:v.start,end:v.end});if(v.st)e.st=v.st;else delete e.st;if(v.pv)e.pv=true;else delete e.pv}}
+    else{const ne={id:uid(),title,cat:v.cat,date:v.date,start:v.start,end:v.end};if(v.pv)ne.pv=true;S.events.push(ne);remember({title,cat:v.cat,start:v.start,end:v.end})}
     const d=v.date;closeSheet();commit();setSel(d);
     toast('✓ '+md(d)+' '+fmtT(v.start)+'–'+fmtT(v.end));
   }else if(m==='tpl'){
@@ -1030,7 +1082,7 @@ function renderMgr(){
   h+=`<div class="sech">時限</div>`;
   S.periods.forEach((p,i)=>{h+=`<div class="prow">${i+1}限 <input class="in" type="time" data-p="${i}" data-w="0" value="${toTV(p[0])}"> – <input class="in" type="time" data-p="${i}" data-w="1" value="${toTV(p[1])}"></div>`});
   h+=`<div class="sech">データ</div>`+
-    `<div class="chips"><button class="btn" id="exp">保存</button><button class="btn" id="impB">読込</button><button class="btn warn" id="rst">初期化</button></div>`;
+    `<div class="chips"><button class="btn" id="expS">📤</button><button class="btn" id="exp">💾</button><button class="btn" id="ics">📅 .ics</button><button class="btn" id="impB">📥</button><button class="btn warn" id="rst">初期化</button></div><div class="hint">📤 共有シートから Google Drive・iCloud・LINE などへ保存　💾 ダウンロード　📅 Googleカレンダー等に読み込める形式　📥 バックアップを読込</div>`;
   $('#mgrBody').innerHTML=h;
 }
 function renderMgrIfOpen(){if(!$('#mgr').classList.contains('hide'))renderMgr()}
@@ -1052,11 +1104,9 @@ $('#mgr').addEventListener('click',e=>{
   else if(a==='16')doApply(ws,addDays(ws,16*7-1),id,'今後16週');
   else if(a==='ed'){$('#mgr').classList.add('hide');openEdit('tpl',id)}
   else if(a==='del')deleteTemplate(id);
-  else if(b.id==='exp'){
-    const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
-    const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download='sukima_plan_backup.json';
-    document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(l.href),1500);
-  }
+  else if(b.id==='exp'){downloadText('sukima_plan_backup.json',backupJSON(),'application/json');S.lastBackup=Date.now();save()}
+  else if(b.id==='expS'){sendFile('sukima_plan_backup.json',backupJSON(),'application/json').then(ok=>{if(ok){S.lastBackup=Date.now();save()}})}
+  else if(b.id==='ics'){sendFile('sukima_plan.ics',buildICS(),'text/calendar')}
   else if(b.id==='impB')$('#imp').click();
   else if(b.id==='rst'){
     if(confirm('予定・定型・ToDoをすべて削除します。よろしいですか？')){snap();S=defaults();commit();renderMgr();toast('初期化しました')}
@@ -1100,8 +1150,9 @@ $('#btnToday').onclick=()=>{setSel(todayK());goMonth(idxOfDate(new Date()),true)
 $('#btnAdd').onclick=()=>openSheet({mode:'event'});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#sheet').classList.contains('hide'))closeSheet();else $('#mgr').classList.add('hide')}});
 
-function renderAll(){renderMonth();renderWeek();renderDay();renderTodo()}
-function tick(){updateNow();renderTodo()}
+function renderAll(){renderMonth();renderWeek();renderDay();renderTodo();renderFreeBox()}
+let lastR=Date.now();
+function tick(){updateNow();renderTodo();if(Date.now()-lastR>300000&&!DR&&!LP){lastR=Date.now();renderWeek();renderDay()}}
 setInterval(tick,30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderAll();fetchWx()}});
 
@@ -1287,27 +1338,44 @@ $('#ttApply').onclick=()=>{
 /* ================= 週次ふりかえり ================= */
 let rvWeek=null;
 function weekStats(ws){
-  const k0=iso(ws),k1=iso(addDays(ws,6)),by={},day=Array.from({length:7},()=>({}));let tot=0;
+  const k0=iso(ws),k1=iso(addDays(ws,6)),R={plan:0,elap:0,actual:0,skip:0,part:0,byPlan:{},byAct:{},day:Array.from({length:7},()=>({}))};
   S.events.forEach(e=>{
     if(e.date<k0||e.date>k1)return;
-    const m=e.end-e.start,di=parseISO(e.date).getDay();
-    by[e.cat]=(by[e.cat]||0)+m;day[di][e.cat]=(day[di][e.cat]||0)+m;tot+=m;
+    const m=e.end-e.start;R.plan+=m;R.byPlan[e.cat]=(R.byPlan[e.cat]||0)+m;
+    if(endedEv(e)||e.st){
+      const a=m*stWeight(e),di=parseISO(e.date).getDay();
+      R.elap+=m;R.actual+=a;R.byAct[e.cat]=(R.byAct[e.cat]||0)+a;R.day[di][e.cat]=(R.day[di][e.cat]||0)+a;
+      if(e.st==='skip')R.skip++;else if(e.st==='part')R.part++;
+    }
   });
-  return{by,day,tot};
+  return R;
+}
+function streak(){
+  let n=0;
+  for(let i=0;i<90;i++){
+    const k=iso(addDays(new Date(),-i)),ev=S.events.filter(e=>e.date===k&&(endedEv(e)||e.st));
+    if(!ev.length)continue;
+    if(ev.some(e=>e.st))break;
+    n++;
+  }
+  return n;
 }
 function openRV(){rvWeek=weekStart(parseISO(sel));renderRV();$('#rv').classList.remove('hide')}
 function renderRV(){
   const ws=rvWeek,we=addDays(ws,6),st=weekStats(ws),pv=weekStats(addDays(ws,-7));
   $('#rvLabel').textContent=`${ws.getMonth()+1}/${ws.getDate()} – ${we.getMonth()+1}/${we.getDate()}`;
   const fh=m=>(Math.round(m/6)/10)+'h';
-  const diff=st.tot-pv.tot;
-  let h=`<div class="rvt">${fh(st.tot)}</div><div style="text-align:center;color:var(--mut);font-size:13px">${diff===0?'±0':(diff>0?'▲ ':'▼ ')+fh(Math.abs(diff))}</div>`;
+  const rate=st.elap?Math.round(st.actual/st.elap*100):null;
+  const diff=st.actual-pv.actual,sk=streak();
+  let h=`<div class="rvt">${rate==null?'—':rate+'%'}</div>`+
+    `<div class="rvs">${fh(st.actual)} / ${fh(st.plan)}${st.elap?` ・ ${diff===0?'±0':(diff>0?'▲ ':'▼ ')+fh(Math.abs(diff))}`:''}</div>`+
+    `<div class="rvs">${st.skip?'✕ '+st.skip+'　':''}${st.part?'△ '+st.part+'　':''}${sk>=2?'🔥 '+sk:''}</div>`;
   const main3=['study','work','exam'];
   const order=main3.concat(Object.keys(CATS).filter(k=>!main3.includes(k)));
-  const max=Math.max(1,...Object.values(st.by));
+  const max=Math.max(1,...Object.values(st.byPlan));
   order.forEach(k=>{
-    const m=st.by[k]||0;if(!m&&!main3.includes(k))return;
-    h+=`<div class="rvr"><span class="nm">${CATS[k].n}</span><div class="bar c-${k}"><i style="width:${m/max*100}%"></i></div><span class="hv">${fh(m)}</span></div>`;
+    const pl=st.byPlan[k]||0,ac=st.byAct[k]||0;if(!pl&&!main3.includes(k))return;
+    h+=`<div class="rvr"><span class="nm">${CATS[k].n}</span><div class="bar c-${k}"><u style="width:${pl/max*100}%"></u><i style="width:${ac/max*100}%"></i></div><span class="hv">${fh(ac)} / ${fh(pl)}</span></div>`;
   });
   const sum=o=>Object.values(o).reduce((a,b)=>a+b,0),dmax=Math.max(1,...st.day.map(sum));
   h+=`<div class="rvd">`+st.day.map((o,i)=>{
@@ -1315,7 +1383,7 @@ function renderRV(){
     return `<div class="col"><div class="stk" style="height:${t/dmax*80}px">${Object.entries(o).map(([k,m])=>`<i class="c-${k}" style="height:${m/t*100}%"></i>`).join('')}</div>${WD[i]}</div>`;
   }).join('')+`</div>`;
   const done=S.todos.filter(t=>t.done&&t.doneAt>=ws.getTime()&&t.doneAt<addDays(ws,7).getTime()).length;
-  h+=`<div style="text-align:center;margin-top:14px;font-size:16px">✓ ${done}</div>`;
+  h+=`<div style="text-align:center;margin-top:14px;font-size:16px">☑ ${done}</div>`;
   $('#rvBody').innerHTML=h;
 }
 $('#wRv').onclick=openRV;
@@ -1383,15 +1451,321 @@ if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
   window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
 }
 
+/* ================= 実施の記録（できなかった・一部だけを例外として記録） ================= */
+const endedEv=e=>e.date<todayK()||(e.date===todayK()&&e.end<=nowMin());
+const startedEv=e=>e.date<todayK()||(e.date===todayK()&&e.start<=nowMin());
+const stWeight=e=>e.st==='skip'?0:e.st==='part'?0.5:1;
+function stBadge(e){
+  if(e.ro)return'';
+  if(!(startedEv(e)||e.st))return'';
+  return `<button type="button" class="stb" data-id="${e.id}" aria-label="実施状況">${e.st==='skip'?'✕':e.st==='part'?'△':'✓'}</button>`;
+}
+function cycleSt(id){
+  const e=S.events.find(x=>x.id===id);if(!e)return;
+  snap();
+  if(!e.st)e.st='part';else if(e.st==='part')e.st='skip';else delete e.st;   // ✓ → △ → ✕ → ✓
+  commit();
+}
+
+/* ================= 共有（招待）・共通の空き・書き出し ================= */
+let viewAs='me',ppCode=null,FR_SLOTS=[],FB_SLOTS=[];
+const memCache=new WeakMap();
+function memEv(m){
+  let r=memCache.get(m);
+  if(!r){r=m.ev.map((a,i)=>({id:m.id+'_'+i,date:a[0],start:a[1],end:a[2],cat:a[3],title:a[4]||'予定あり',ro:true}));memCache.set(m,r)}
+  return r;
+}
+const curMember=()=>viewAs==='me'?null:(S.members.find(m=>m.id===viewAs)||null);
+function curEvents(){const m=curMember();return m?memEv(m):S.events}
+const fmtTS=ts=>{const d=new Date(ts);return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const fhh=m=>(Math.round(m/6)/10)+'h';
+
+/* --- コードの作成・読み取り（サーバーを使わず、相手に直接渡す） --- */
+const b64=u8=>{let t='';for(let i=0;i<u8.length;i+=8192)t+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
+const unb64=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const x=atob(t),u=new Uint8Array(x.length);for(let i=0;i<x.length;i++)u[i]=x.charCodeAt(i);return u};
+async function packShare(obj){
+  const bytes=new TextEncoder().encode(JSON.stringify(obj));
+  if(typeof CompressionStream!=='undefined'){
+    try{const cs=new CompressionStream('deflate-raw'),w=cs.writable.getWriter();w.write(bytes);w.close();
+      return 'SKM2:'+b64(new Uint8Array(await new Response(cs.readable).arrayBuffer()))}catch(_){}
+  }
+  return 'SKM1:'+b64(bytes);
+}
+async function unpackShare(text){
+  const m=String(text).match(/SKM([12]):([A-Za-z0-9_-]+)/);if(!m)throw new Error('format');
+  let u=unb64(m[2]);
+  if(m[1]==='2'){const ds=new DecompressionStream('deflate-raw'),w=ds.writable.getWriter();w.write(u);w.close();u=new Uint8Array(await new Response(ds.readable).arrayBuffer())}
+  return JSON.parse(new TextDecoder().decode(u));
+}
+function cleanEv(list){
+  const out=[];
+  for(const a of (Array.isArray(list)?list:[])){
+    if(!Array.isArray(a))continue;
+    const d=String(a[0]),st=+a[1],en=+a[2];
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!(st>=0&&en<=1440&&en>st))continue;
+    out.push([d,st,en,CATS[a[3]]?a[3]:'other',String(a[4]||'').slice(0,60)]);
+    if(out.length>1500)break;
+  }
+  return out;
+}
+async function copyText(t){
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(t);return true}}catch(_){}
+  const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+  let ok=false;try{ok=document.execCommand('copy')}catch(_){}ta.remove();return ok;
+}
+function downloadText(name,text,type){
+  const blob=new Blob([text],{type}),l=document.createElement('a');
+  l.href=URL.createObjectURL(blob);l.download=name;document.body.appendChild(l);l.click();l.remove();
+  setTimeout(()=>URL.revokeObjectURL(l.href),1500);
+}
+async function sendFile(name,text,type){
+  try{
+    const file=new File([text],name,{type});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return true}
+  }catch(e){if(e&&e.name==='AbortError')return false}
+  downloadText(name,text,type);return true;
+}
+const backupJSON=()=>JSON.stringify(S,null,1);
+
+/* --- .ics（Googleカレンダー等に読み込める形式） --- */
+const icsEsc=t=>String(t).replace(/\\/g,'\\\\').replace(/;/g,'\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function icsDT(k,min){
+  const [y,m,d]=k.split('-').map(Number),dt=new Date(y,m-1,d,Math.floor(min/60),min%60);
+  return dt.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+}
+function icsFold(line){
+  const enc=new TextEncoder();let out='',cur='',n=0;
+  for(const ch of line){const b=enc.encode(ch).length;if(n+b>73){out+=cur+'\r\n ';cur='';n=1}cur+=ch;n+=b}
+  return out+cur;
+}
+function buildICS(){
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//SUKIMA PLAN//JA','CALSCALE:GREGORIAN','X-WR-CALNAME:SUKIMA PLAN'];
+  S.events.filter(e=>e.st!=='skip').forEach(e=>{
+    L.push('BEGIN:VEVENT','UID:'+e.id+'@sukima-plan','DTSTAMP:'+stamp,'DTSTART:'+icsDT(e.date,e.start),'DTEND:'+icsDT(e.date,e.end),
+      'SUMMARY:'+icsEsc(e.title),'DESCRIPTION:'+icsEsc((CATS[e.cat]||CATS.other).n),'END:VEVENT');
+  });
+  L.push('END:VCALENDAR');
+  return L.map(icsFold).join('\r\n')+'\r\n';
+}
+function remindBackup(){
+  if(S.events.length<5)return;
+  const day=todayK();if(S.remind===day)return;
+  if(Date.now()-(S.lastBackup||0)>14*864e5){S.remind=day;save();setTimeout(()=>toast('💾 バックアップ（☰）',false),1500)}
+}
+
+/* --- 閲覧の切り替え（自分 / 招待されたメンバー） --- */
+function renderVbar(){
+  const bar=$('#vbar');
+  if(!S.members.length){bar.classList.add('hide');bar.innerHTML='';return}
+  bar.classList.remove('hide');
+  bar.innerHTML=(viewAs!=='me'?'<span class="vro">👁</span>':'')+
+    `<button class="vc${viewAs==='me'?' on':''}" data-v="me">自分</button>`+
+    S.members.map(m=>`<button class="vc${viewAs===m.id?' on':''}" data-v="${m.id}">${esc(m.name)}</button>`).join('')+
+    `<button class="vc" data-v="__pp">＋</button>`;
+}
+function setView(id){
+  if(id!=='me'&&!S.members.some(m=>m.id===id))id='me';
+  viewAs=id;
+  document.body.classList.toggle('vm',id!=='me');
+  $('#s3').classList.toggle('viewing',id!=='me');
+  $('#s3t').textContent=id==='me'?'ToDo':'🔍';
+  renderVbar();layout();renderAll();
+}
+$('#vbar').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.v==='__pp')openPP();else setView(b.dataset.v);
+});
+
+/* --- 共通の空きを探す --- */
+function freeSlots(cfg,ids){
+  const out=[],tk=todayK(),nm=nowMin();
+  const parts=ids.map(id=>id==='me'?{me:true}:{m:S.members.find(x=>x.id===id)}).filter(p=>p.me||p.m);
+  if(!parts.length)return out;
+  for(let i=0;i<cfg.weeks*7;i++){
+    const dt=addDays(startOfDay(new Date()),i),k=iso(dt);
+    if(!cfg.days.includes(dt.getDay()))continue;
+    if(parts.some(p=>p.m&&(k<p.m.from||k>p.m.to)))continue;        // 共有期間の外は不明なので除外
+    let a=cfg.from;const b=cfg.to;
+    if(k===tk)a=Math.max(a,Math.ceil((nm+1)/15)*15);
+    if(b-a<cfg.len)continue;
+    const busy=[];
+    parts.forEach(p=>{
+      const list=p.me?S.events.filter(e=>e.date===k&&e.st!=='skip'):memEv(p.m).filter(e=>e.date===k);
+      list.forEach(e=>busy.push([e.start,e.end]));
+    });
+    busy.sort((x,y)=>x[0]-y[0]);
+    let cur=a;
+    for(const [st,en] of busy){
+      if(en<=cur)continue;
+      const end=Math.min(st,b);
+      if(end-cur>=cfg.len)out.push({date:k,start:cur,end});
+      cur=Math.max(cur,en);if(cur>=b)break;
+    }
+    if(b-cur>=cfg.len)out.push({date:k,start:cur,end:b});
+  }
+  return out;
+}
+function slotToSheet(sl,len){
+  openSheet({mode:'event',date:sl.date,start:sl.start,end:Math.min(sl.end,sl.start+Math.max(len,60)),cat:'friend'});
+}
+function renderFreeBox(){
+  const m=curMember(),box=$('#freeBox');
+  if(!m){box.innerHTML='';return}
+  FB_SLOTS=freeSlots(S.fr,['me',m.id]).slice(0,14);
+  box.innerHTML=`<button class="btn pri" id="fbOpen" style="padding:10px;font-size:15px">🔍 ${esc(m.name)}</button>`+
+    `<div class="hint" style="margin:0">⟳ ${fmtTS(m.at)}</div>`+
+    (FB_SLOTS.length?FB_SLOTS.map((s,i)=>`<button class="fres" data-i="${i}"><span>${md(s.date)} ${fmtT(s.start)}–${fmtT(s.end)}</span><small>${fhh(s.end-s.start)}</small></button>`).join(''):'<div class="none">—</div>');
+}
+$('#freeBox').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.id==='fbOpen'){const m=curMember();if(m)openFR(['me',m.id])}
+  else if(b.dataset.i!==undefined){const sl=FB_SLOTS[+b.dataset.i];if(sl)slotToSheet(sl,S.fr.len)}
+});
+function openFR(ids){
+  const C=S.fr;
+  if(ids)C.ids=ids;else if(!C.ids)C.ids=['me'].concat(S.members.map(m=>m.id));
+  C.ids=C.ids.filter(i=>i==='me'||S.members.some(m=>m.id===i));
+  if(!C.ids.length)C.ids=['me'];
+  save();renderFR();$('#fr').classList.remove('hide');
+}
+function renderFR(){
+  const C=S.fr;
+  let h=`<div class="lbl">👥</div><div class="chips"><button class="chip${C.ids.includes('me')?' on':''}" data-p="me">自分</button>`+
+    S.members.map(m=>`<button class="chip${C.ids.includes(m.id)?' on':''}" data-p="${m.id}">${esc(m.name)}</button>`).join('')+`</div>`+
+    `<div class="lbl">📅</div><div class="chips">${WD.map((w,i)=>`<button class="chip${C.days.includes(i)?' on':''}" data-dy="${i}">${w}</button>`).join('')}<button class="chip" data-dq="wk">平日</button><button class="chip" data-dq="we">週末</button></div>`+
+    `<div class="lbl">🕒</div><div class="row3"><label class="fl" style="margin-top:0"><input class="in" type="time" id="frFrom" value="${toTV(C.from)}"></label><label class="fl" style="margin-top:0"><input class="in" type="time" id="frTo" value="${toTV(C.to)}"></label></div>`+
+    `<div class="chips" style="margin-top:8px">${[['昼',660,900],['夕方',960,1260],['終日',540,1260]].map(([l,a,b])=>`<button class="chip${C.from===a&&C.to===b?' on':''}" data-tw="${a}-${b}">${l}</button>`).join('')}</div>`+
+    `<div class="lbl">⏳</div><div class="chips">${[30,60,120,180].map(n=>`<button class="chip${C.len===n?' on':''}" data-l="${n}">${fmtMin(n)}</button>`).join('')}</div>`+
+    `<div class="lbl">🗓</div><div class="chips">${[1,2,4].map(n=>`<button class="chip${C.weeks===n?' on':''}" data-wk="${n}">${n}週</button>`).join('')}</div>`+
+    `<div class="sech"></div><div id="frRes"></div>`;
+  $('#frBody').innerHTML=h;renderFRRes();
+}
+function renderFRRes(){
+  const C=S.fr;
+  FR_SLOTS=C.to-C.from>=C.len?freeSlots(C,C.ids).slice(0,40):[];
+  $('#frRes').innerHTML=FR_SLOTS.length?FR_SLOTS.map((s,i)=>`<button class="fres" data-i="${i}" style="margin-bottom:8px"><span>${md(s.date)} ${fmtT(s.start)}–${fmtT(s.end)}</span><small>${fhh(s.end-s.start)}</small></button>`).join(''):'<div class="none">—</div>';
+}
+$('#frBody').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset,C=S.fr;
+  if(d.i!==undefined){const sl=FR_SLOTS[+d.i];if(sl){$('#fr').classList.add('hide');slotToSheet(sl,C.len)}return}
+  if(d.p){const i=C.ids.indexOf(d.p);if(i>=0){if(C.ids.length>1)C.ids.splice(i,1)}else C.ids.push(d.p)}
+  else if(d.dy!==undefined){const n=+d.dy,i=C.days.indexOf(n);if(i>=0){if(C.days.length>1)C.days.splice(i,1)}else C.days.push(n)}
+  else if(d.dq)C.days=d.dq==='wk'?[1,2,3,4,5]:[0,6];
+  else if(d.tw){const [a,z]=d.tw.split('-').map(Number);C.from=a;C.to=z}
+  else if(d.l)C.len=+d.l;
+  else if(d.wk)C.weeks=+d.wk;
+  save();renderFR();renderFreeBox();
+});
+$('#frBody').addEventListener('input',e=>{
+  const C=S.fr;
+  if(e.target.id==='frFrom'&&e.target.value)C.from=ptv(e.target.value);
+  else if(e.target.id==='frTo'&&e.target.value)C.to=ptv(e.target.value);
+  else return;
+  save();renderFRRes();renderFreeBox();
+});
+$('#frClose').onclick=()=>$('#fr').classList.add('hide');
+$('#fr').addEventListener('click',e=>{if(e.target.id==='fr')$('#fr').classList.add('hide')});
+
+/* --- 招待パネル --- */
+function ppOutHTML(){
+  return ppCode?`<textarea class="in pcode" id="ppCode" readonly>${ppCode}</textarea><div class="chips" style="margin-top:8px"><button class="btn pri" id="ppShare" style="padding:10px 18px">📤</button><button class="btn" id="ppCopy" style="padding:10px 18px">📋</button></div>`:'';
+}
+function renderPP(){
+  const me=S.me;
+  let h=`<div class="sech" style="margin-top:0">📤</div>`+
+    `<input class="in" id="ppName" type="text" placeholder="名前" value="${esc(me.name||'')}" autocomplete="off">`+
+    `<div class="chips" style="margin-top:8px"><button class="chip${me.mode!=='detail'?' on':''}" data-sm="busy">空き時間のみ</button><button class="chip${me.mode==='detail'?' on':''}" data-sm="detail">予定名も</button></div>`+
+    `<div class="chips" style="margin-top:8px">${[2,4,8].map(n=>`<button class="chip${(me.weeks||4)===n?' on':''}" data-sw="${n}">${n}週</button>`).join('')}</div>`+
+    `<div style="margin-top:10px"><button class="btn pri" id="ppMake" style="padding:12px 18px;font-size:16px">招待コードを作る</button></div>`+
+    `<div id="ppOut" style="margin-top:8px">${ppOutHTML()}</div>`+
+    `<div class="hint">コードを送った相手だけが、その時点の予定を見られます。🔒の予定は名前を隠します。</div>`+
+    `<div class="sech">📥</div>`+
+    `<textarea class="in pcode" id="ppIn" placeholder="コードを貼り付け"></textarea>`+
+    `<div class="chips" style="margin-top:8px"><button class="btn pri" id="ppGo" style="padding:10px 18px">読み込む</button><button class="btn" id="ppFileB" style="padding:10px 18px">📁</button></div>`+
+    `<div class="sech">👤</div>`;
+  if(!S.members.length)h+='<div class="none">—</div>';
+  S.members.forEach(m=>{
+    h+=`<div class="trow" data-id="${m.id}"><div class="ti"><b>${esc(m.name)}</b><span>⟳ ${fmtTS(m.at)} ・ ${md(m.from)}〜${md(m.to)}</span></div>`+
+      `<div class="bt"><button class="btn sm pri" data-a="view">見る</button><button class="btn sm" data-a="free">🔍</button><button class="btn sm warn" data-a="del">✕</button></div></div>`;
+  });
+  if(S.members.length)h+=`<div style="margin-top:6px"><button class="btn" id="ppFree" style="padding:10px 18px">🔍 共通の空き</button></div>`;
+  $('#ppBody').innerHTML=h;
+}
+function openPP(){ppCode=null;renderPP();$('#pp').classList.remove('hide')}
+async function makeCode(){
+  const nm=($('#ppName').value||'').trim();
+  if(!nm){const f=$('#ppName');f.classList.add('shake');setTimeout(()=>f.classList.remove('shake'),350);f.focus();return}
+  S.me.name=nm;if(!S.me.id)S.me.id=uid()+uid();save();
+  const weeks=S.me.weeks||4,from=todayK(),to=iso(addDays(new Date(),weeks*7-1)),detail=S.me.mode==='detail';
+  const ev=S.events.filter(e=>e.date>=from&&e.date<=to&&e.st!=='skip').map(e=>{
+    const show=detail&&!e.pv;return[e.date,e.start,e.end,show?e.cat:'other',show?e.title:''];
+  });
+  ppCode=await packShare({v:1,sid:S.me.id,name:nm,at:Date.now(),from,to,ev});
+  $('#ppOut').innerHTML=ppOutHTML();
+}
+async function shareCode(){
+  const text=`${S.me.name} — SUKIMA PLAN\n${ppCode}`;
+  if(navigator.share){try{await navigator.share({title:'SUKIMA PLAN',text});return}catch(e){if(e&&e.name==='AbortError')return}}
+  toast((await copyText(text))?'✓ コピーしました':'コピーできませんでした',false);
+}
+async function importShare(text){
+  let o;
+  try{o=await unpackShare(text)}catch(_){toast('コードを読み取れません',false);return}
+  if(!o||o.v!==1||!o.sid||!Array.isArray(o.ev)||!/^\d{4}-\d{2}-\d{2}$/.test(o.from)||!/^\d{4}-\d{2}-\d{2}$/.test(o.to)){toast('コードを読み取れません',false);return}
+  if(o.sid===S.me.id){toast('自分のコードです',false);return}
+  const data={sid:String(o.sid).slice(0,40),name:String(o.name||'?').slice(0,20),at:+o.at||Date.now(),from:o.from,to:o.to,ev:cleanEv(o.ev)};
+  snap();
+  const i=S.members.findIndex(x=>x.sid===data.sid);
+  let m;
+  if(i>=0){m=Object.assign({id:S.members[i].id},data);S.members[i]=m}
+  else{m=Object.assign({id:uid()},data);S.members.push(m)}
+  save();$('#pp').classList.add('hide');setView(m.id);toast('✓ '+m.name,false);
+}
+$('#ppBody').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.sm){S.me.mode=d.sm;save();ppCode=null;renderPP()}
+  else if(d.sw){S.me.weeks=+d.sw;save();ppCode=null;renderPP()}
+  else if(b.id==='ppMake')await makeCode();
+  else if(b.id==='ppShare')await shareCode();
+  else if(b.id==='ppCopy'){toast((await copyText(ppCode))?'✓':'×',false)}
+  else if(b.id==='ppGo')await importShare($('#ppIn').value);
+  else if(b.id==='ppFileB')$('#ppFile').click();
+  else if(b.id==='ppFree'){$('#pp').classList.add('hide');openFR(null)}
+  else if(d.a){
+    const id=b.closest('.trow').dataset.id;
+    if(d.a==='view'){$('#pp').classList.add('hide');setView(id)}
+    else if(d.a==='free'){$('#pp').classList.add('hide');openFR(['me',id])}
+    else if(d.a==='del'){
+      if(!confirm('このメンバーを削除しますか？'))return;
+      snap();S.members=S.members.filter(m=>m.id!==id);
+      if(S.fr.ids)S.fr.ids=S.fr.ids.filter(x=>x!==id);
+      save();
+      if(viewAs===id)setView('me');else{renderVbar();layout()}
+      renderPP();
+    }
+  }
+});
+$('#ppBody').addEventListener('input',e=>{if(e.target.id==='ppName'){S.me.name=e.target.value;save()}});
+$('#ppFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=()=>importShare(rd.result);rd.readAsText(f);e.target.value='';
+});
+$('#ppClose').onclick=()=>$('#pp').classList.add('hide');
+$('#pp').addEventListener('click',e=>{if(e.target.id==='pp')$('#pp').classList.add('hide')});
+$('#btnPpl').onclick=openPP;
+
 /* ================= 起動 ================= */
 visIdx=idxOfDate(new Date());
 renderTdChips();
+renderVbar();
 autoApplyWeek();
 renderAll();
 layout();
 goMonth(visIdx,false);
 scrollDayDefault();
 fetchWx();
+remindBackup();
 })();
 </script>
 </body>
